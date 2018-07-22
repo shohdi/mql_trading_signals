@@ -54,6 +54,7 @@ input int noOfTradePeriods = 4;
 
 input int shortPeriod = 14;
 input int longPeriod = 28;
+input int periodsToCheck = 5;
 
 
 
@@ -364,7 +365,7 @@ void OnTick()
             
             
             //do work for new candle here
-            double signal = shohdiSignalDetect(1 + (noOfTradePeriods * 5));
+            double signal = shohdiSignalDetect(1 + (noOfTradePeriods * periodsToCheck));
             if(signal == 1)
             {
                //up
