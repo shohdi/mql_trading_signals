@@ -304,6 +304,16 @@ void shohdiCalculateSuccessFail ()
                
 }
 
+double calculateStopLoss(int pos)
+{
+  double highs[longPeriod];
+  double lows[longPeriod];
+  
+  int bars = noOfTradePeriods - 1;
+
+  
+}
+
 
 
 
