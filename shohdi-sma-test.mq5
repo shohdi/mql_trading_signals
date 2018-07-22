@@ -304,13 +304,47 @@ void shohdiCalculateSuccessFail ()
                
 }
 
-double calculateStopLoss(int pos)
+double calculateMoveOfStopLoss(int pos)
 {
-  double highs[longPeriod];
-  double lows[longPeriod];
+  double highs[];
+  double lows[];
+  
+  ArrayResize(highs,longPeriod);
+  ArrayResize(lows,longPeriod);
   
   int bars = noOfTradePeriods - 1;
 
+   CopyHigh(_Symbol,_Period,pos,longPeriod,highs);
+   CopyLow(_Symbol,_Period,pos,longPeriod,lows);
+   
+   double average = 0;
+   int count = 0;
+   for (int i=0;(i+bars) < longPeriod;i+=noOfTradePeriods)
+   {
+      double allHigh = 0;
+      double allLow = 999999999;
+      for (int j=0;j<noOfTradePeriods;j++)
+      {
+         int index = i+j;
+         if(allHigh < highs[index])
+            allHigh = highs[index];
+         
+         if(allLow > lows[index])
+            allLow = lows[index];
+         
+      }
+      
+      double moveMent = allHigh - allLow;
+      average = average + moveMent;
+      count = count + 1;
+      
+   }
+   
+   average = average / count;
+   
+   average = average + (average * 0.25);
+   
+   return average;
   
 }
 
@@ -392,6 +426,9 @@ void OnTick()
             {
                //no signal
             }
+            
+            
+           Print( calculateMoveOfStopLoss(1));
             
             
          }
