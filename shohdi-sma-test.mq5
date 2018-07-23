@@ -49,12 +49,12 @@ MqlCandle lastCandle;
 //+------------------------------------------------------------------+
 
 
-input int noOfTradePeriods = 4;
+input int noOfTradePeriods = 8;
 
 
 input int shortPeriod = 14;
 input int longPeriod = 28;
-input int periodsToCheck = 20;
+input int periodsToCheck = 5;
 input double riskToProfit = 2;
 
 
@@ -302,7 +302,7 @@ double shohdiSignalDetect (int pos)
 void shohdiCalculateSuccessFail ()
 {
         double signal = shohdiSignalDetect(1 + (noOfTradePeriods * periodsToCheck));
-        double averageMove = calculateMoveOfStopLoss(1 + (noOfTradePeriods * periodsToCheck));
+        double averageMove = calculateMoveOfStopLoss(1 + (noOfTradePeriods * periodsToCheck)) / riskToProfit;
         int lastPos = 1 + (noOfTradePeriods * periodsToCheck);
         
         if(signal >0)
@@ -453,7 +453,7 @@ double calculateMoveOfStopLoss(int pos)
    
    average = average / count;
    
-   average = average + (average * 0.25);
+   average = average - (average * 0.25);
    
    return average;
   
