@@ -54,7 +54,8 @@ input int noOfTradePeriods = 4;
 
 input int shortPeriod = 14;
 input int longPeriod = 28;
-input int periodsToCheck = 5;
+input int periodsToCheck = 20;
+input double riskToProfit = 2;
 
 
 
@@ -300,8 +301,118 @@ double shohdiSignalDetect (int pos)
 
 void shohdiCalculateSuccessFail ()
 {
-       
+        double signal = shohdiSignalDetect(1 + (noOfTradePeriods * periodsToCheck));
+        double averageMove = calculateMoveOfStopLoss(1 + (noOfTradePeriods * periodsToCheck));
+        int lastPos = 1 + (noOfTradePeriods * periodsToCheck);
+        
+        if(signal >0)
+        {
+            //up
+            Print("found up");
+            calculateSuccessFailUp(signal,averageMove,lastPos);
+            
+            
+        }
+        else if(signal < 0)
+        {
+            //down
+            Print("found down");
+            calculateSuccessFailDown(signal,averageMove,lastPos);
+        }
+        else
+        {
+        }
+        
+        
                
+}
+
+
+void calculateSuccessFailUp(double signal,double averageMove,int lastPos)
+{
+   MqlCandle lastCandle = getCandle(lastPos);
+   double stopLoss = lastCandle.Close - averageMove;
+   double takeProfit = lastCandle.Close + (averageMove * riskToProfit);
+   double highs[];
+   double lows[];
+   int countToCheck = lastPos-1;
+   ArrayResize(highs,countToCheck);
+   ArrayResize(lows,countToCheck);
+   
+   CopyHigh(_Symbol,_Period,1,countToCheck,highs);
+   CopyLow(_Symbol,_Period,1,countToCheck,lows);
+   
+   bool foundResult = false;
+   for (int i=0;i<countToCheck;i++)
+   {
+      if(!foundResult)
+      {
+         if(lows[i] <= stopLoss)
+         {
+            //fail
+            noOfFail++;
+            foundResult = true;
+         }
+         else if(highs[i] >= takeProfit)
+         {
+            //success
+            noOfSuccess++;
+            foundResult = true;
+         }
+      }
+      
+   }
+   
+   
+   
+   if(!foundResult)
+      noOfFail++;
+   
+   
+   
+   
+   
+}
+
+void calculateSuccessFailDown(double signal,double averageMove,int lastPos)
+{
+
+    MqlCandle lastCandle = getCandle(lastPos);
+   double stopLoss = lastCandle.Close + averageMove;
+   double takeProfit = lastCandle.Close - (averageMove * riskToProfit);
+   double highs[];
+   double lows[];
+   int countToCheck = lastPos-1;
+   ArrayResize(highs,countToCheck);
+   ArrayResize(lows,countToCheck);
+   
+   CopyHigh(_Symbol,_Period,1,countToCheck,highs);
+   CopyLow(_Symbol,_Period,1,countToCheck,lows);
+   
+   bool foundResult = false;
+   for (int i=0;i<countToCheck;i++)
+   {
+      if(!foundResult)
+      {
+         if(highs[i] >= stopLoss)
+         {
+            //fail
+            noOfFail++;
+            foundResult = true;
+         }
+         else if(lows[i] <= takeProfit)
+         {
+            //success
+            noOfSuccess++;
+            foundResult = true;
+         }
+      }
+      
+   }
+   
+   if(!foundResult)
+      noOfFail++;
+
 }
 
 double calculateMoveOfStopLoss(int pos)
@@ -405,31 +516,17 @@ void OnTick()
          if(currentCandle.Date != lastCandle.Date)
          {
             //new candle , do work here
-            Print("current time : " + currentCandle.Date + "last time : "  + lastCandle.Date);
+           
+           
+            shohdiCalculateSuccessFail();
             
             
-            //do work for new candle here
-            double signal = shohdiSignalDetect(1 + (noOfTradePeriods * periodsToCheck));
-            if(signal == 1)
-            {
-               //up
-               Print("found up");
-               shohdiCalculateSuccessFail();
-            }
-            else if(signal == -1)
-            {
-               //down
-               Print ("found down");
-               shohdiCalculateSuccessFail();
-            }
-            else
-            {
-               //no signal
-            }
+           
             
             
-           Print( calculateMoveOfStopLoss(1));
-            
+           
+           
+          
             
          }
          
