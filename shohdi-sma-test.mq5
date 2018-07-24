@@ -58,7 +58,7 @@ input int shortPeriod = 14;
 input int longPeriod = 28;
 input int periodsToCheck = 5;
 input double riskToProfit = 2;
-input double symbolRateToUsd = 1.0;
+
 input double percentFromCapital = 0.05;
 
 
@@ -109,12 +109,14 @@ double calculateVolume(double stopLoss,double balance,double close)
    
    bool foundVolume = false;
    double volumeFound = 0;
+   double rate = calcUsdRate(close);
    while(! foundVolume)
    {
       volumeFound = volumeFound + 0.01;
       double volumeCount = lotSize * volumeFound ;
       double allDiff =  volumeCount * diff ;
-      double lossPrice = allDiff;
+      
+      double lossPrice = allDiff * rate;
       if(lossPrice > moneyToLoss)
       {
          foundVolume = true;
@@ -129,6 +131,39 @@ double calculateVolume(double stopLoss,double balance,double close)
    
    return volumeFound;
    
+}
+
+double calcUsdRate(double close)
+{
+   string sym = _Symbol;
+   int len = StringLen(sym);
+   string to = StringSubstr(sym,len-3,3);
+   string from = StringSubstr(sym,0,3);
+   StringToUpper(to);
+   StringToUpper(from);
+   if(to == "USD")
+   {
+      return 1.0;
+   }
+   else if(from == "USD")
+   {
+      return (1/close);
+   }
+   else
+   {
+      string newSym =  to + "USD";
+      double closes[1];
+      int newPos = 0;
+      CopyClose(newSym,PERIOD_D1,newPos,1,closes);
+      double ret = closes[0];
+      while (ret <= 0)
+      {
+         newPos++;
+         CopyClose(newSym,PERIOD_D1,newPos,1,closes);
+         ret = closes[0];
+      }
+      return ret;
+   }
 }
 
 bool openTrade (int type)
