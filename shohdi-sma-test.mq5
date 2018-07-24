@@ -58,7 +58,8 @@ input int shortPeriod = 14;
 input int longPeriod = 28;
 input int periodsToCheck = 5;
 input double riskToProfit = 2;
-
+input double symbolRateToUsd = 1.0;
+input double percentFromCapital = 0.05;
 
 
 
@@ -92,9 +93,49 @@ bool calcTime()
     return true;
 }
 
+double calculateVolume(double stopLoss,double balance,double close)
+{
+   double diff = 0;
+   diff = stopLoss - close;
+   if(diff < 0)
+   {
+      diff = diff * -1;
+      
+   }
+   
+   double moneyToLoss = balance * percentFromCapital;
+   
+   double lotSize = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE);
+   
+   bool foundVolume = false;
+   double volumeFound = 0;
+   while(! foundVolume)
+   {
+      volumeFound = volumeFound + 0.01;
+      double volumeCount = lotSize * volumeFound ;
+      double allDiff =  volumeCount * diff ;
+      double lossPrice = allDiff;
+      if(lossPrice > moneyToLoss)
+      {
+         foundVolume = true;
+         if(volumeFound > 0.01)
+         {
+            volumeFound = volumeFound - 0.01;
+         }
+      }  
+   }
+   
+   
+   
+   return volumeFound;
+   
+}
+
 bool openTrade (int type)
 {
-   Print("Account balance = ",AccountInfoDouble(ACCOUNT_BALANCE));
+
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   Print("Account balance = ",balance);
    
    int setType = 0;
    if (type == 1)
@@ -124,12 +165,14 @@ bool openTrade (int type)
       stopLoss = last.Close + averageMove;
       takeProfit = last.Close - (averageMove * riskToProfit);
     }
+    
+    double volume = calculateVolume(stopLoss,balance,last.Close);
    
    MqlTradeRequest request={0};
    MqlTradeResult  result={0};
    request.action   =TRADE_ACTION_DEAL;                     // type of trade operation
    request.symbol   =Symbol();                              // symbol
-   request.volume   =0.1;                                   // volume of 0.1 lot
+   request.volume   =volume;                                   // volume of 0.1 lot
    request.type     =setType;                        // order type
    request.price    =SymbolInfoDouble(Symbol(),SYMBOL_ASK); // price for opening
    request.deviation=5;                                     // allowed deviation from the price
@@ -544,6 +587,21 @@ int OnInit()
       currentTick.ask = -1;
       currentTick.bid = -1;
       lastCandle.Close = -1;
+      
+      
+      //--- show all the information available from the function AccountInfoDouble()
+   printf("ACCOUNT_BALANCE =  %G",AccountInfoDouble(ACCOUNT_BALANCE));
+   printf("ACCOUNT_CREDIT =  %G",AccountInfoDouble(ACCOUNT_CREDIT));
+   printf("ACCOUNT_PROFIT =  %G",AccountInfoDouble(ACCOUNT_PROFIT));
+   printf("ACCOUNT_EQUITY =  %G",AccountInfoDouble(ACCOUNT_EQUITY));
+   printf("ACCOUNT_MARGIN =  %G",AccountInfoDouble(ACCOUNT_MARGIN));
+   printf("ACCOUNT_MARGIN_FREE =  %G",AccountInfoDouble(ACCOUNT_FREEMARGIN));
+   printf("ACCOUNT_MARGIN_LEVEL =  %G",AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+   printf("ACCOUNT_MARGIN_SO_CALL = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
+   printf("ACCOUNT_MARGIN_SO_SO = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_SO));
+   printf("lot size : %G" , SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE));
+      
+      
 //---
    return(INIT_SUCCEEDED);
   }
@@ -619,4 +677,8 @@ void OnTimer()
           
    
   }
+  
+  
+
+  
 //+------------------------------------------------------------------+
