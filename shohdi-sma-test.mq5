@@ -16,6 +16,8 @@
 //| My custom types                                   |
 //+------------------------------------------------------------------+
 
+#define EXPERT_MAGIC 123456   // MagicNumber of the expert
+
 enum SmaCalcType
 {
    Close = 0
@@ -88,6 +90,56 @@ bool calcTime()
     //      return (strucTime.hour >= startHour && strucTime.hour <= endHour);
     
     return true;
+}
+
+bool openTrade (int type)
+{
+   Print("Account balance = ",AccountInfoDouble(ACCOUNT_BALANCE));
+   
+   int setType = 0;
+   if (type == 1)
+   {
+      setType = ORDER_TYPE_BUY;
+   }
+   else if(type == -1)
+   {
+      setType = ORDER_TYPE_SELL;
+   }
+   else
+   {
+      return false;
+   }
+   
+    double averageMove = calculateMoveOfStopLoss(1) / riskToProfit;
+    MqlCandle last = getCandle(1);
+    double stopLoss = 0;
+    double takeProfit = 0;
+    if(type == 1)
+    {
+      stopLoss = last.Close - averageMove;
+      takeProfit = last.Close + (averageMove * riskToProfit);
+    }
+    else if (type == -1)
+    {
+      stopLoss = last.Close + averageMove;
+      takeProfit = last.Close - (averageMove * riskToProfit);
+    }
+   
+   MqlTradeRequest request={0};
+   MqlTradeResult  result={0};
+   request.action   =TRADE_ACTION_DEAL;                     // type of trade operation
+   request.symbol   =Symbol();                              // symbol
+   request.volume   =0.1;                                   // volume of 0.1 lot
+   request.type     =setType;                        // order type
+   request.price    =SymbolInfoDouble(Symbol(),SYMBOL_ASK); // price for opening
+   request.deviation=5;                                     // allowed deviation from the price
+   request.magic    =EXPERT_MAGIC;
+   request.sl = stopLoss;
+   request.tp = takeProfit;
+  
+                             // MagicNumber of the order
+//--- send the request
+   return OrderSend(request,result);
 }
 
 
@@ -281,7 +333,7 @@ double shohdiSignalDetect (int pos)
       double beforeShortSma = shohdiSma(beforePos,shortPeriod,0);
       double beforeLongSma = shohdiSma(beforePos,longPeriod,0); 
       MqlCandle lastCandle = getCandle(pos);
-      MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods  ));
+      MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods * shortPeriod  ));
       int candleDir = 0;
       if(historyCandle.Close > lastCandle.Close)
       {
@@ -297,11 +349,11 @@ double shohdiSignalDetect (int pos)
       }
       
       
-      if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma)// && candleDir == -1)
+      if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma && candleDir == -1)
       {
          return -1;
       }
-      else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma)// && candleDir == 1)
+      else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma && candleDir == 1)
       {
          return 1;
       }
@@ -538,7 +590,11 @@ void OnTick()
             shohdiCalculateSuccessFail();
             
             
-           
+            int tradeType = shohdiSignalDetect(1);
+            if(tradeType != 0)
+            {
+               openTrade(tradeType);
+            }
             
             
            
