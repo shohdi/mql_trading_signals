@@ -221,7 +221,7 @@ bool openTrade (int type)
 }
 
 
-MqlCandle getCandle (int pos)
+MqlCandle getCandle (int pos,ENUM_TIMEFRAMES period)
  {
       MqlCandle ret;
       
@@ -231,16 +231,16 @@ MqlCandle getCandle (int pos)
       double lows[1];
       long volumes[1];
        datetime dates[1];
-      CopyClose(_Symbol,_Period,pos,1,closes);
-       CopyOpen(_Symbol,_Period,pos,1,opens);
-      CopyHigh(_Symbol,_Period,pos,1,highs);
-      CopyLow(_Symbol,_Period,pos,1,lows);
-      CopyTime(_Symbol,_Period,pos,1,dates);
+      CopyClose(_Symbol,period,pos,1,closes);
+       CopyOpen(_Symbol,period,pos,1,opens);
+      CopyHigh(_Symbol,period,pos,1,highs);
+      CopyLow(_Symbol,period,pos,1,lows);
+      CopyTime(_Symbol,period,pos,1,dates);
       ret.Volume = 1;
-      int volFound = CopyRealVolume(_Symbol,_Period,pos,1,volumes);
+      int volFound = CopyRealVolume(_Symbol,period,pos,1,volumes);
       if(volFound <= 0)
       {
-        volFound =  CopyTickVolume(_Symbol,_Period,pos,1,volumes);
+        volFound =  CopyTickVolume(_Symbol,period,pos,1,volumes);
       
       }
       
@@ -267,6 +267,12 @@ MqlCandle getCandle (int pos)
          
             
  }
+ 
+ MqlCandle getCandle(int pos)
+ {
+   return getCandle(pos,_Period);
+ }
+ 
  
  
 
@@ -430,6 +436,7 @@ double shohdiSignalDetect (int pos)
       if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma && candleDir == -1)
       {
          return -1;
+         
       }
       else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma && candleDir == 1)
       {
