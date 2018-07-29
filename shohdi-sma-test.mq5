@@ -168,7 +168,7 @@ double calcUsdRate(double close)
 
 bool openTrade (int type)
 {
-
+   Print("Start order ");
    double balance = AccountInfoDouble(ACCOUNT_BALANCE);
    Print("Account balance = ",balance);
    
@@ -462,7 +462,7 @@ void shohdiCalculateSuccessFail ()
         if(signal >0)
         {
             //up
-            Print("found up");
+            //Print("found up");
             calculateSuccessFailUp(signal,averageMove,lastPos);
             
             
@@ -470,7 +470,7 @@ void shohdiCalculateSuccessFail ()
         else if(signal < 0)
         {
             //down
-            Print("found down");
+            //Print("found down");
             calculateSuccessFailDown(signal,averageMove,lastPos);
         }
         else
