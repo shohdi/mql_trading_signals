@@ -615,6 +615,16 @@ double calculateMoveOfStopLoss(int pos)
 
 
 
+int getOpenedOrderNo()
+{
+   int total1=PositionsTotal();
+   int total2=OrdersTotal();
+   
+   
+    Print("Pending orders number ",total2," opened orders number ",total1);
+   return total1 + total2 ;
+   
+}
 
 
 //+------------------------------------------------------------------+
@@ -691,7 +701,7 @@ void OnTick()
             
             
             int tradeType = shohdiSignalDetect(1);
-            if(tradeType != 0)
+            if(tradeType != 0 &&  getOpenedOrderNo() == 0)
             {
                openTrade(tradeType);
             }
