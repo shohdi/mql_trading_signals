@@ -60,6 +60,8 @@ input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
 input double percentFromCapital = 0.025;
+input double maxPercent = 0.001;
+input double minPercent = 0.1;
 
 
 
@@ -72,6 +74,8 @@ int noOfSuccess = 0;
 int noOfFail = 0;
 
 
+double startBalance = 0;
+MqlCandle lastMonth;
 
 
 
@@ -404,12 +408,42 @@ string printDir (double value)
 }
 
 
-
+bool reachMaximum()
+{
+    if(startBalance == 0)
+      {
+         double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+         startBalance = balance;
+         lastMonth = getCandle(1,PERIOD_MN1);
+         
+      }
+      else
+      {
+         //check month is same
+         MqlCandle month = getCandle(1,PERIOD_MN1);
+         double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+         if(month.Date != lastMonth.Date)
+         {
+            startBalance = balance;
+            lastMonth = month;
+         }
+         else
+         {
+            //check balance
+            if((balance/startBalance) >= (1+maxPercent))
+            {
+               return true;
+            }
+         }
+         
+      }
+      return false;
+}
 
 
 double shohdiSignalDetect (int pos)
 {
-
+     
       int myPos = pos ;
       int beforePos = myPos + 1;
       double lastShortSma = shohdiSma(myPos,shortPeriod,0);
@@ -651,6 +685,7 @@ int OnInit()
    printf("ACCOUNT_MARGIN_LEVEL =  %G",AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
    printf("ACCOUNT_MARGIN_SO_CALL = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
    printf("ACCOUNT_MARGIN_SO_SO = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_SO));
+   printf("ACCOUNT_LEVERAGE = %G",AccountInfoInteger(ACCOUNT_LEVERAGE));
    printf("lot size : %G" , SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE));
       
       
