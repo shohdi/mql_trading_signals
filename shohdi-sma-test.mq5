@@ -62,6 +62,8 @@ input double riskToProfit = 2.2;
 input double percentFromCapital = 0.025;
 input double maxPercent = 0.001;
 input double minPercent = 0.1;
+input bool tradeUp = true;
+input bool tradeDown = true;
 
 
 
@@ -410,13 +412,37 @@ string printDir (double value)
 
 bool reachMaximum()
 {
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
     if(startBalance == 0)
       {
-         double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+         
          startBalance = balance;
-         lastMonth = getCandle(1,PERIOD_MN1);
+         //lastMonth = getCandle(1,PERIOD_MN1);
          
       }
+      else
+      {
+         if(maxPercent == 0 && minPercent == 0)
+         {
+            return false;
+         }
+         
+         if(maxPercent > 0 && ((balance/startBalance) >= (1+maxPercent)))
+         {
+            Print("success to reach takeprofit!");
+            return true;
+         }
+         
+         if(minPercent > 0 && ((balance/startBalance) <= (1-minPercent)))
+         {
+            Print("fail reach stop loss!");
+            return true;
+         }
+         
+         
+      }
+      
+      /*
       else
       {
          //check month is same
@@ -437,12 +463,17 @@ bool reachMaximum()
          }
          
       }
+      */
       return false;
 }
 
 
 double shohdiSignalDetect (int pos)
 {
+      if(reachMaximum())
+      {
+         return 0.0;
+      }
      
       int myPos = pos ;
       int beforePos = myPos + 1;
@@ -467,12 +498,12 @@ double shohdiSignalDetect (int pos)
       }
       
       
-      if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma && candleDir == -1)
+      if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma && tradeDown )//&& candleDir == -1)
       {
          return -1;
          
       }
-      else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma && candleDir == 1)
+      else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma && tradeUp )//&& candleDir == 1)
       {
          return 1;
       }
