@@ -57,9 +57,9 @@ input int noOfTradePeriods = 8;
 input int shortPeriod = 14;
 input int longPeriod = 28;
 input int periodsToCheck = 5;
-input double riskToProfit = 2;
+input double riskToProfit = 2.2;
 
-input double percentFromCapital = 0.05;
+input double percentFromCapital = 0.025;
 
 
 
