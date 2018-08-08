@@ -60,8 +60,8 @@ input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
 input double percentFromCapital = 0.025;
-input double maxPercent = 0.001;
-input double minPercent = 0.1;
+input double maxPercent = 0.0;
+input double minPercent = 0.0;
 input bool tradeUp = true;
 input bool tradeDown = true;
 
@@ -800,3 +800,4 @@ void OnTimer()
 
   
 //+------------------------------------------------------------------+
+
