@@ -64,7 +64,10 @@ input double maxPercent = 0.001;
 input double minPercent = 0.1;
 input bool tradeUp = true;
 input bool tradeDown = true;
+input double customStartBalance = 0;
 
+
+double startBalance = 0;
 
 
 
@@ -76,7 +79,7 @@ int noOfSuccess = 0;
 int noOfFail = 0;
 
 
-double startBalance = 0;
+
 MqlCandle lastMonth;
 
 
@@ -732,6 +735,17 @@ int OnInit()
       currentTick.ask = -1;
       currentTick.bid = -1;
       lastCandle.Close1 = -1;
+      
+      
+      double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+      if(customStartBalance <= 0)
+      {
+         startBalance = balance;
+      }
+      else
+      {
+         startBalance = customStartBalance;
+      }
       
       
       //--- show all the information available from the function AccountInfoDouble()
