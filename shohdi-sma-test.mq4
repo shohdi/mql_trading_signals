@@ -102,7 +102,7 @@ bool calcTime()
     return true;
 }
 
-double calculateVolume(double stopLoss,double balance,double close)
+double calculateVolume(double stopLoss,double balance,double close,double &newMove)
 {
    double diff = 0;
    diff = stopLoss - close;
@@ -111,6 +111,8 @@ double calculateVolume(double stopLoss,double balance,double close)
       diff = diff * -1;
       
    }
+   
+   newMove = diff;
    
    double moneyToLoss = balance * percentFromCapital;
    
@@ -133,6 +135,20 @@ double calculateVolume(double stopLoss,double balance,double close)
          {
             volumeFound = volumeFound - 0.01;
          }
+         
+         volumeCount = lotSize * volumeFound ;
+         allDiff =  volumeCount * diff ;
+      
+         lossPrice = allDiff * rate;
+         
+         if(lossPrice > moneyToLoss)
+         {
+           
+            newMove = ((moneyToLoss * diff)/lossPrice);
+            Print("found new average! old ",diff," new " , newMove);
+         }
+         
+          
       }  
    }
    
@@ -208,6 +224,7 @@ bool openTrade (int type)
    }
    
     double averageMove = calculateMoveOfStopLoss(1) / riskToProfit;
+    //averageMove = fixAverageMove(1,averageMove);
     //MqlCandle last = getCandle(1);
     double stopLoss = 0;
     double takeProfit = 0;
@@ -221,8 +238,23 @@ bool openTrade (int type)
       stopLoss = close + averageMove;
       takeProfit = close - (averageMove * riskToProfit);
     }
+    double newAverageMove = 0;
+    double volume = calculateVolume(stopLoss,balance,close,newAverageMove);
+    if( newAverageMove < averageMove)
+    {
+         averageMove = newAverageMove;
+          if(type == 1)
+          {
+            stopLoss = close - averageMove;
+            takeProfit = close + (averageMove * riskToProfit);
+          }
+          else if (type == -1)
+          {
+            stopLoss = close + averageMove;
+            takeProfit = close - (averageMove * riskToProfit);
+          }
+    }
     
-    double volume = calculateVolume(stopLoss,balance,close);
    
    //MqlTradeRequest request={0};
    //MqlTradeResult  result={0};
@@ -257,6 +289,34 @@ bool openTrade (int type)
    
 }
 
+
+double fixAverageMove(int pos,double foundMove)
+{
+   double highs[];
+   double lows[];
+    ArrayResize(highs,noOfTradePeriods);
+   ArrayResize(lows,noOfTradePeriods);
+   
+   CopyHigh(_Symbol,_Period,pos,noOfTradePeriods,highs);
+   CopyLow(_Symbol,_Period,pos,noOfTradePeriods,lows);
+   
+   double maxMove = 0.0;
+   for (int i=0;i<noOfTradePeriods;i++)
+   {
+      double diff = highs[i] - lows[i];
+      if(diff > maxMove)
+      {
+         maxMove = diff;
+      }
+   }
+   
+   if (maxMove > (foundMove))
+   {
+      foundMove = maxMove;
+   }
+   
+   return foundMove;
+}
 
 MqlCandle getCandle (int pos,int period)
  {
@@ -553,6 +613,7 @@ void shohdiCalculateSuccessFail ()
 {
         double signal = shohdiSignalDetect(1 + (noOfTradePeriods * periodsToCheck));
         double averageMove = calculateMoveOfStopLoss(1 + (noOfTradePeriods * periodsToCheck)) / riskToProfit;
+         //averageMove = fixAverageMove(1 + (noOfTradePeriods * periodsToCheck),averageMove);
         int lastPos = 1 + (noOfTradePeriods * periodsToCheck);
         
         if(signal >0)
@@ -680,7 +741,7 @@ double calculateMoveOfStopLoss(int pos)
    
    double average = 0;
    int count = 0;
-   for (int i=0;(i+bars) < longPeriod;i+=noOfTradePeriods)
+   for (int i=0;(i+bars) < longPeriod;i++)
    {
       double allHigh = 0;
       double allLow = 999999999;
@@ -805,11 +866,11 @@ void OnTick()
             //new candle , do work here
            
            
-            shohdiCalculateSuccessFail();
+            //shohdiCalculateSuccessFail();
             
             
             int tradeType = shohdiSignalDetect(1);
-            if(tradeType != 0 &&  getOpenedOrderNo() == 0)
+            if(tradeType != 0 )//&&  getOpenedOrderNo() == 0)
             {
                openTrade(tradeType);
             }
