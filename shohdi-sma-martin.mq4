@@ -80,13 +80,67 @@ int noOfFail = 0;
 
 
 
+
+
+
+
 MqlCandle lastMonth;
+
+
+
+//+------------------------------------------------------------------+
+//| martin gale variables                                  |
+//+------------------------------------------------------------------+ 
+
+double martinStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+int multiply[4] = {1,1,2,3};
+int martinIndex = 0;
+double lastMartinIndexBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+
+
+
+
 
 
 
 //+------------------------------------------------------------------+
 //| My custom functions                                   |
 //+------------------------------------------------------------------+
+
+
+
+//+------------------------------------------------------------------+
+//| martin gale functions                                  |
+//+------------------------------------------------------------------+ 
+
+int getNextMartinIndex()
+{
+   double currentBalance  = AccountInfoDouble(ACCOUNT_BALANCE);
+   if(currentBalance > lastMartinIndexBalance)
+   {
+      martinIndex = 0;
+      
+   }
+   else if (lastMartinIndexBalance == currentBalance)
+   {
+      
+   }
+   else if (lastMartinIndexBalance > currentBalance)
+   {
+      martinIndex = (martinIndex + 1)% ArraySize(multiply) ;
+      
+   }
+   
+   lastMartinIndexBalance = currentBalance;
+   if(martinIndex == 0)
+   {
+      martinStartBalance = currentBalance;
+   }
+   
+   Print("martin index " , martinIndex);
+   return martinIndex;
+   
+}
 
 
 
@@ -135,6 +189,19 @@ double calculateVolume(double stopLoss,double balance,double close,double &newMo
          {
             volumeFound = volumeFound - 0.01;
          }
+         
+         //+------------------------------------------------------------------+
+         //| martin gale volume                                  |
+         //+------------------------------------------------------------------+ 
+         
+         getNextMartinIndex();
+         
+         volumeFound = volumeFound * multiply[martinIndex];
+         moneyToLoss = moneyToLoss * multiply[martinIndex];
+         
+          //+------------------------------------------------------------------+
+         //| end of martin gale volume                                  |
+         //+------------------------------------------------------------------+ 
          
          volumeCount = lotSize * volumeFound ;
          allDiff =  volumeCount * diff ;
@@ -870,7 +937,7 @@ void OnTick()
             
             
             int tradeType = shohdiSignalDetect(1);
-            if(tradeType != 0 )//&&  getOpenedOrderNo() == 0)
+            if(tradeType != 0 &&  getOpenedOrderNo() == 0)
             {
                openTrade(tradeType);
             }
