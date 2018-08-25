@@ -51,11 +51,11 @@ MqlCandle lastCandle;
 //+------------------------------------------------------------------+
 
 
-input int noOfTradePeriods = 8;
+input int noOfTradePeriods = 19;
 
 
-input int shortPeriod = 14;
-input int longPeriod = 28;
+input int shortPeriod = 25;
+input int longPeriod = 49;
 input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
@@ -65,6 +65,8 @@ input double minPercent = 0.1;
 input bool tradeUp = true;
 input bool tradeDown = true;
 input double customStartBalance = 0;
+
+input double averageSize = 50;
 
 
 double startBalance = 0;
@@ -798,17 +800,17 @@ double calculateMoveOfStopLoss(int pos)
   double highs[];
   double lows[];
   
-  ArrayResize(highs,longPeriod);
-  ArrayResize(lows,longPeriod);
+  ArrayResize(highs,averageSize);
+  ArrayResize(lows,averageSize);
   
   int bars = noOfTradePeriods - 1;
 
-   CopyHigh(_Symbol,_Period,pos,longPeriod,highs);
-   CopyLow(_Symbol,_Period,pos,longPeriod,lows);
+   CopyHigh(_Symbol,_Period,pos,averageSize,highs);
+   CopyLow(_Symbol,_Period,pos,averageSize,lows);
    
    double average = 0;
    int count = 0;
-   for (int i=0;(i+bars) < longPeriod;i++)
+   for (int i=0;(i+bars) < averageSize;i++)
    {
       double allHigh = 0;
       double allLow = 999999999;
