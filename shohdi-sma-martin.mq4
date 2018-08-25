@@ -95,7 +95,7 @@ MqlCandle lastMonth;
 //+------------------------------------------------------------------+ 
 
 double martinStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
-int multiply[4] = {1,1,2,3};
+int multiply[5] = {1,1,1,2,3};
 int martinIndex = 0;
 double lastMartinIndexBalance = AccountInfoDouble(ACCOUNT_BALANCE);
 
