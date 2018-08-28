@@ -68,6 +68,7 @@ input double customStartBalance = 0;
 
 input double averageSize = 50;
 
+input double minLossValue = 3.0;
 
 
 double startBalance = 0;
@@ -118,6 +119,10 @@ double calculateVolume(double stopLoss,double balance,double close,double &newMo
    newMove = diff;
    
    double moneyToLoss = balance * percentFromCapital;
+   if(moneyToLoss < minLossValue)
+   {
+      moneyToLoss = minLossValue;
+   }
    
    double lotSize = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE);
    
