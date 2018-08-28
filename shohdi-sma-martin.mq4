@@ -51,22 +51,24 @@ MqlCandle lastCandle;
 //+------------------------------------------------------------------+
 
 
-input int noOfTradePeriods = 19;
+input int noOfTradePeriods = 20;
 
 
-input int shortPeriod = 25;
-input int longPeriod = 49;
+input int shortPeriod = 27;
+input int longPeriod = 50;
 input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
 input double percentFromCapital = 0.01;
-input double maxPercent = 0.001;
-input double minPercent = 0.1;
+input double maxPercent = 0;
+input double minPercent = 0;
 input bool tradeUp = true;
 input bool tradeDown = true;
 input double customStartBalance = 0;
 
 input double averageSize = 50;
+
+input double minLossValue = 3.0;
 
 
 double startBalance = 0;
@@ -171,6 +173,10 @@ double calculateVolume(double stopLoss,double balance,double close,double &newMo
    newMove = diff;
    
    double moneyToLoss = balance * percentFromCapital;
+   if(moneyToLoss < minLossValue)
+   {
+      moneyToLoss = minLossValue;
+   }
    
    double lotSize = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE);
    
