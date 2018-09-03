@@ -66,7 +66,7 @@ input bool tradeUp = true;
 input bool tradeDown = true;
 input double customStartBalance = 0;
 
-input double averageSize = 50;
+input double averageSize = 300;
 
 input double minLossValue = 3.0;
 
@@ -786,7 +786,7 @@ int getOpenedOrderNo()
    int total2=OrdersTotal();
    
    
-    Print("Pending orders number ",total2," opened orders number ",total1);
+    //Print("Pending orders number ",total2," opened orders number ",total1);
    return total1 + total2 ;
    
 }
@@ -878,9 +878,20 @@ void OnTick()
             
             
             int tradeType = shohdiSignalDetect(1);
-            if(tradeType != 0 )//&&  getOpenedOrderNo() == 0)
+            if(tradeType != 0 )
             {
-               openTrade(tradeType);
+               int orderNums = getOpenedOrderNo();
+               Print("found signal : current order number " ,orderNums );
+               if(orderNums == 0)
+               {
+                  Print("0 orders open , starting new order in dir : ",tradeType);
+                  openTrade(tradeType);
+               }
+               else
+               {
+                  Print("no trades becase there is open orders :  ",orderNums);
+               }
+               
             }
             
             
