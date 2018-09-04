@@ -20,21 +20,21 @@
 
 enum SmaCalcType
 {
-   Close = 0
-   ,High = 1
-   ,Low = 2
+   Close1 = 0
+   ,High1 = 1
+   ,Low1 = 2
    ,Mid = 3
 };
 
 
 struct MqlCandle
  {
-   double Close;
-   double Open;
+   double Close1;
+   double Open1;
     int Dir;
-   double High;
-    double Low;
-    double Volume;
+   double High1;
+    double Low1;
+    double Volume1;
     datetime Date;
  };
  
@@ -59,12 +59,19 @@ input int longPeriod = 28;
 input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
-input double percentFromCapital = 0.025;
-input double maxPercent = 0.0;
-input double minPercent = 0.0;
+input double percentFromCapital = 0.01;
+input double maxPercent = 0.001;
+input double minPercent = 0.1;
 input bool tradeUp = true;
 input bool tradeDown = true;
+input double customStartBalance = 0;
 
+input double averageSize = 300;
+
+input double minLossValue = 3.0;
+
+
+double startBalance = 0;
 
 
 
@@ -76,7 +83,7 @@ int noOfSuccess = 0;
 int noOfFail = 0;
 
 
-double startBalance = 0;
+
 MqlCandle lastMonth;
 
 
@@ -99,7 +106,7 @@ bool calcTime()
     return true;
 }
 
-double calculateVolume(double stopLoss,double balance,double close)
+double calculateVolume(double stopLoss,double balance,double close,double &newMove)
 {
    double diff = 0;
    diff = stopLoss - close;
@@ -109,7 +116,13 @@ double calculateVolume(double stopLoss,double balance,double close)
       
    }
    
+   newMove = diff;
+   
    double moneyToLoss = balance * percentFromCapital;
+   if(moneyToLoss < minLossValue)
+   {
+      moneyToLoss = minLossValue;
+   }
    
    double lotSize = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE);
    
@@ -130,6 +143,20 @@ double calculateVolume(double stopLoss,double balance,double close)
          {
             volumeFound = volumeFound - 0.01;
          }
+         
+         volumeCount = lotSize * volumeFound ;
+         allDiff =  volumeCount * diff ;
+      
+         lossPrice = allDiff * rate;
+         
+         if(lossPrice > moneyToLoss)
+         {
+           
+            newMove = ((moneyToLoss * diff)/lossPrice);
+            Print("found new average! old ",diff," new " , newMove);
+         }
+         
+          
       }  
    }
    
@@ -178,14 +205,26 @@ bool openTrade (int type)
    double balance = AccountInfoDouble(ACCOUNT_BALANCE);
    Print("Account balance = ",balance);
    
+      double vbid    = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double vask    = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   double close = 0;
+   string title = "";
+   color arrowColor;
+   
    int setType = 0;
    if (type == 1)
    {
       setType = ORDER_TYPE_BUY;
+      close = vask;
+      title = "Buy order";
+      arrowColor = clrGreen;
    }
    else if(type == -1)
    {
       setType = ORDER_TYPE_SELL;
+      close = vbid;
+      title = "Sell order";
+      arrowColor = clrRed;
    }
    else
    {
@@ -193,21 +232,37 @@ bool openTrade (int type)
    }
    
     double averageMove = calculateMoveOfStopLoss(1) / riskToProfit;
-    MqlCandle last = getCandle(1);
+    //averageMove = fixAverageMove(1,averageMove);
+    //MqlCandle last = getCandle(1);
     double stopLoss = 0;
     double takeProfit = 0;
     if(type == 1)
     {
-      stopLoss = last.Close - averageMove;
-      takeProfit = last.Close + (averageMove * riskToProfit);
+      stopLoss = close - averageMove;
+      takeProfit = close + (averageMove * riskToProfit);
     }
     else if (type == -1)
     {
-      stopLoss = last.Close + averageMove;
-      takeProfit = last.Close - (averageMove * riskToProfit);
+      stopLoss = close + averageMove;
+      takeProfit = close - (averageMove * riskToProfit);
+    }
+    double newAverageMove = 0;
+    double volume = calculateVolume(stopLoss,balance,close,newAverageMove);
+    if( newAverageMove < averageMove)
+    {
+         averageMove = newAverageMove;
+          if(type == 1)
+          {
+            stopLoss = close - averageMove;
+            takeProfit = close + (averageMove * riskToProfit);
+          }
+          else if (type == -1)
+          {
+            stopLoss = close + averageMove;
+            takeProfit = close - (averageMove * riskToProfit);
+          }
     }
     
-    double volume = calculateVolume(stopLoss,balance,last.Close);
    
    MqlTradeRequest request={0};
    MqlTradeResult  result={0};
@@ -215,19 +270,63 @@ bool openTrade (int type)
    request.symbol   =Symbol();                              // symbol
    request.volume   =volume;                                   // volume of 0.1 lot
    request.type     =setType;                        // order type
-   request.price    =SymbolInfoDouble(Symbol(),SYMBOL_ASK); // price for opening
-   request.deviation=5;                                     // allowed deviation from the price
-   request.magic    =EXPERT_MAGIC;
+   request.price    =close; // price for opening
+   request.deviation =5;                                     // allowed deviation from the price
+   request.magic     =EXPERT_MAGIC;
    request.sl = stopLoss;
    request.tp = takeProfit;
   
                              // MagicNumber of the order
 //--- send the request
    return OrderSend(request,result);
+   
+   //int ticket=OrderSend(Symbol(),setType,volume,close,5,stopLoss,takeProfit,title,EXPERT_MAGIC,0,arrowColor);
+   
+    //if(ticket>=0)
+     //{
+         //order my be successed
+         
+       //  if(OrderSelect(ticket, SELECT_BY_TICKET)==true)
+         //{
+         //   return true;
+         //}
+     //}
+     
+     
+     //return false;
+   
 }
 
 
-MqlCandle getCandle (int pos,ENUM_TIMEFRAMES period)
+double fixAverageMove(int pos,double foundMove)
+{
+   double highs[];
+   double lows[];
+    ArrayResize(highs,noOfTradePeriods);
+   ArrayResize(lows,noOfTradePeriods);
+   
+   CopyHigh(_Symbol,_Period,pos,noOfTradePeriods,highs);
+   CopyLow(_Symbol,_Period,pos,noOfTradePeriods,lows);
+   
+   double maxMove = 0.0;
+   for (int i=0;i<noOfTradePeriods;i++)
+   {
+      double diff = highs[i] - lows[i];
+      if(diff > maxMove)
+      {
+         maxMove = diff;
+      }
+   }
+   
+   if (maxMove > (foundMove))
+   {
+      foundMove = maxMove;
+   }
+   
+   return foundMove;
+}
+
+MqlCandle getCandle (int pos,int period)
  {
       MqlCandle ret;
       
@@ -237,33 +336,33 @@ MqlCandle getCandle (int pos,ENUM_TIMEFRAMES period)
       double lows[1];
       long volumes[1];
        datetime dates[1];
-      CopyClose(_Symbol,period,pos,1,closes);
-       CopyOpen(_Symbol,period,pos,1,opens);
-      CopyHigh(_Symbol,period,pos,1,highs);
-      CopyLow(_Symbol,period,pos,1,lows);
-      CopyTime(_Symbol,period,pos,1,dates);
-      ret.Volume = 1;
-      int volFound = CopyRealVolume(_Symbol,period,pos,1,volumes);
+      CopyClose(_Symbol,(ENUM_TIMEFRAMES)period,pos,(int)1,closes);
+       CopyOpen(_Symbol,(ENUM_TIMEFRAMES)period,pos,1,opens);
+      CopyHigh(_Symbol,(ENUM_TIMEFRAMES)period,pos,1,highs);
+      CopyLow(_Symbol,(ENUM_TIMEFRAMES)period,pos,1,lows);
+      CopyTime(_Symbol,(ENUM_TIMEFRAMES)period,pos,1,dates);
+      ret.Volume1 = 1;
+      int volFound = CopyRealVolume(_Symbol,(ENUM_TIMEFRAMES)period,pos,1,volumes);
       if(volFound <= 0)
       {
-        volFound =  CopyTickVolume(_Symbol,period,pos,1,volumes);
+        volFound =  CopyTickVolume(_Symbol,(ENUM_TIMEFRAMES)period,pos,1,volumes);
       
       }
       
       
        if(volumes[0] > 0)
          {
-               ret.Volume = volumes[0];
+               ret.Volume1 = volumes[0];
          }
       
       ret.Date = dates[0];
-      ret.Close = closes[0];
-      ret.Open = opens[0];
-      ret.High = highs[0];
-      ret.Low = lows[0];
-      if(ret.Open < ret.Close)
+      ret.Close1 = closes[0];
+      ret.Open1 = opens[0];
+      ret.High1 = highs[0];
+      ret.Low1 = lows[0];
+      if(ret.Open1 < ret.Close1)
          ret.Dir = 1;
-     else if (ret.Open > ret.Close)
+     else if (ret.Open1 > ret.Close1)
          ret.Dir = -1;
      else
          ret.Dir = 0;
@@ -287,15 +386,15 @@ MqlCandle getCandle (int pos,ENUM_TIMEFRAMES period)
 
 double compareCandles (MqlCandle &old,MqlCandle &newC)
 {
-      if (newC.High > old.High
-      && newC.Close > old.Close
-      && newC.Low > old.Low)
+      if (newC.High1 > old.High1
+      && newC.Close1 > old.Close1
+      && newC.Low1 > old.Low1)
       {
          return 1;
       }
-      else if (newC.High < old.High
-      && newC.Close < old.Close
-      && newC.Low < old.Low)
+      else if (newC.High1 < old.High1
+      && newC.Close1 < old.Close1
+      && newC.Low1 < old.Low1)
       {
          return -1;
       }
@@ -311,11 +410,11 @@ double getDirectionOfNoOfPeriods (int pos,int noOfPeriods)
 {
       MqlCandle lastCandle = getCandle(pos);
       MqlCandle startCandle = getCandle(pos+(noOfPeriods));
-      if(startCandle.Close > lastCandle.Close)
+      if(startCandle.Close1 > lastCandle.Close1)
       {
          return -1;
       }
-      else if (startCandle.Close < lastCandle.Close)
+      else if (startCandle.Close1 < lastCandle.Close1)
       {
          return 1;
       }
@@ -484,11 +583,11 @@ double shohdiSignalDetect (int pos)
       MqlCandle lastCandle = getCandle(pos);
       MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods * shortPeriod  ));
       int candleDir = 0;
-      if(historyCandle.Close > lastCandle.Close)
+      if(historyCandle.Close1 > lastCandle.Close1)
       {
          candleDir = -1;
       }
-      else if (historyCandle.Close < lastCandle.Close)
+      else if (historyCandle.Close1 < lastCandle.Close1)
       {
          candleDir = 1;
       }
@@ -522,6 +621,7 @@ void shohdiCalculateSuccessFail ()
 {
         double signal = shohdiSignalDetect(1 + (noOfTradePeriods * periodsToCheck));
         double averageMove = calculateMoveOfStopLoss(1 + (noOfTradePeriods * periodsToCheck)) / riskToProfit;
+         //averageMove = fixAverageMove(1 + (noOfTradePeriods * periodsToCheck),averageMove);
         int lastPos = 1 + (noOfTradePeriods * periodsToCheck);
         
         if(signal >0)
@@ -550,8 +650,8 @@ void shohdiCalculateSuccessFail ()
 void calculateSuccessFailUp(double signal,double averageMove,int lastPos)
 {
    MqlCandle lastCandle = getCandle(lastPos);
-   double stopLoss = lastCandle.Close - averageMove;
-   double takeProfit = lastCandle.Close + (averageMove * riskToProfit);
+   double stopLoss = lastCandle.Close1 - averageMove;
+   double takeProfit = lastCandle.Close1 + (averageMove * riskToProfit);
    double highs[];
    double lows[];
    int countToCheck = lastPos-1;
@@ -597,8 +697,8 @@ void calculateSuccessFailDown(double signal,double averageMove,int lastPos)
 {
 
     MqlCandle lastCandle = getCandle(lastPos);
-   double stopLoss = lastCandle.Close + averageMove;
-   double takeProfit = lastCandle.Close - (averageMove * riskToProfit);
+   double stopLoss = lastCandle.Close1 + averageMove;
+   double takeProfit = lastCandle.Close1 - (averageMove * riskToProfit);
    double highs[];
    double lows[];
    int countToCheck = lastPos-1;
@@ -639,17 +739,17 @@ double calculateMoveOfStopLoss(int pos)
   double highs[];
   double lows[];
   
-  ArrayResize(highs,longPeriod);
-  ArrayResize(lows,longPeriod);
+  ArrayResize(highs,averageSize);
+  ArrayResize(lows,averageSize);
   
   int bars = noOfTradePeriods - 1;
 
-   CopyHigh(_Symbol,_Period,pos,longPeriod,highs);
-   CopyLow(_Symbol,_Period,pos,longPeriod,lows);
+   CopyHigh(_Symbol,_Period,pos,averageSize,highs);
+   CopyLow(_Symbol,_Period,pos,averageSize,lows);
    
    double average = 0;
    int count = 0;
-   for (int i=0;(i+bars) < longPeriod;i+=noOfTradePeriods)
+   for (int i=0;(i+bars) < averageSize;i++)
    {
       double allHigh = 0;
       double allLow = 999999999;
@@ -686,7 +786,7 @@ int getOpenedOrderNo()
    int total2=OrdersTotal();
    
    
-    Print("Pending orders number ",total2," opened orders number ",total1);
+    //Print("Pending orders number ",total2," opened orders number ",total1);
    return total1 + total2 ;
    
 }
@@ -703,7 +803,18 @@ int OnInit()
       lastTick.bid = -1;
       currentTick.ask = -1;
       currentTick.bid = -1;
-      lastCandle.Close = -1;
+      lastCandle.Close1 = -1;
+      
+      
+      double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+      if(customStartBalance <= 0)
+      {
+         startBalance = balance;
+      }
+      else
+      {
+         startBalance = customStartBalance;
+      }
       
       
       //--- show all the information available from the function AccountInfoDouble()
@@ -752,7 +863,7 @@ void OnTick()
          MqlCandle currentCandle = getCandle(0);
          
          
-         if(lastCandle.Close == -1)
+         if(lastCandle.Close1 == -1)
          {
             lastCandle = currentCandle;
             return;
@@ -763,13 +874,24 @@ void OnTick()
             //new candle , do work here
            
            
-            shohdiCalculateSuccessFail();
+            //shohdiCalculateSuccessFail();
             
             
             int tradeType = shohdiSignalDetect(1);
-            if(tradeType != 0 &&  getOpenedOrderNo() == 0)
+            if(tradeType != 0 )
             {
-               openTrade(tradeType);
+               int orderNums = getOpenedOrderNo();
+               Print("found signal : current order number " ,orderNums );
+               if(orderNums == 0)
+               {
+                  Print("0 orders open , starting new order in dir : ",tradeType);
+                  openTrade(tradeType);
+               }
+               else
+               {
+                  Print("no trades becase there is open orders :  ",orderNums);
+               }
+               
             }
             
             
