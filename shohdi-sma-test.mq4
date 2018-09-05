@@ -56,6 +56,14 @@ input int noOfTradePeriods = 8;
 
 input int shortPeriod = 14;
 input int longPeriod = 28;
+input double maxMovePercent = 0.75;
+input double averageSize = 300;
+input bool allowMovingStop = true;
+input bool allowSoftwareTrail = true;
+
+input double minLossValue = 3.0;
+
+
 input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
@@ -66,9 +74,9 @@ input bool tradeUp = true;
 input bool tradeDown = true;
 input double customStartBalance = 0;
 
-input double averageSize = 300;
 
-input double minLossValue = 3.0;
+
+
 
 
 double startBalance = 0;
@@ -87,11 +95,118 @@ int noOfFail = 0;
 MqlCandle lastMonth;
 
 
+int lastTicket = 0;
+int lastDir = 0;
+double lastStopLoss = 0;
+double lastAverageMove = 0;
+
+
 
 //+------------------------------------------------------------------+
 //| My custom functions                                   |
 //+------------------------------------------------------------------+
 
+
+void reCalcStopLoss()
+{
+   int count = getOpenedOrderNo();
+   if(count == 1 && allowMovingStop)
+   {
+       double vbid    = MarketInfo(_Symbol,MODE_BID);
+      double vask    = MarketInfo(_Symbol,MODE_ASK);
+      double close = 0;
+      double newStopLoss;
+      bool changeFound = false;
+      color arrowColor;
+      
+      int setType = 0;
+      if (lastDir == 1)
+      {
+         setType = OP_BUY;
+         close = vask;
+         arrowColor = clrGreen;
+         newStopLoss = close - lastAverageMove;
+         if(newStopLoss > lastStopLoss)
+         {
+            //found change
+            changeFound = true;
+         }
+      }
+      else if(lastDir == -1)
+      {
+         setType = OP_SELL;
+         close = vbid;
+         arrowColor = clrRed;
+         newStopLoss = close + lastAverageMove;
+          if(newStopLoss < lastStopLoss)
+         {
+            //found change
+            changeFound = true;
+         }
+         
+      }
+      else
+      {
+         return;
+      }
+      
+      if(changeFound)
+      {
+         if(!allowSoftwareTrail)
+         {
+            OrderSelect(lastTicket,SELECT_BY_TICKET);
+            bool res=OrderModify(OrderTicket(),OrderOpenPrice(),newStopLoss,OrderTakeProfit(),0,arrowColor);
+          
+               if(!res)
+                  Print("Error in OrderModify. Error code=",GetLastError());
+               else
+                  lastStopLoss = newStopLoss;
+         }
+         else
+         {
+            lastStopLoss = newStopLoss;
+         }
+      }
+      else
+      {
+         if(allowSoftwareTrail)
+         {
+            bool foundClose = false;
+           
+            if(lastDir == 1)
+            {
+               if(close < lastStopLoss)
+               {
+                  foundClose = true;
+                  
+                  
+               }
+            }
+            else if(lastDir == -1)
+            {
+               if(close > lastStopLoss)
+               {
+                  foundClose = true;
+               }
+            }
+           
+            
+            if(foundClose)
+            {
+                OrderSelect(lastTicket,SELECT_BY_TICKET);
+                  bool closeRes = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),5,clrNONE);
+                  if(!closeRes)
+                  {
+                     Print("Error in OrderClose. Error code=",GetLastError());
+                  }
+            }
+            
+         }
+         
+      }
+  
+   }
+}
 
 
 bool calcTime()
@@ -288,6 +403,10 @@ bool openTrade (int type)
          
          if(OrderSelect(ticket, SELECT_BY_TICKET)==true)
          {
+            lastTicket = ticket;
+            lastDir = type;
+            lastStopLoss = stopLoss;
+            lastAverageMove = averageMove;
             return true;
          }
      }
@@ -749,6 +868,7 @@ double calculateMoveOfStopLoss(int pos)
    
    double average = 0;
    int count = 0;
+   double maxMove = 0;
    for (int i=0;(i+bars) < averageSize;i++)
    {
       double allHigh = 0;
@@ -765,7 +885,14 @@ double calculateMoveOfStopLoss(int pos)
       }
       
       double moveMent = allHigh - allLow;
+      
+      if(moveMent > maxMove)
+      {
+         maxMove = moveMent;
+      }
+      
       average = average + moveMent;
+      
       count = count + 1;
       
    }
@@ -773,6 +900,9 @@ double calculateMoveOfStopLoss(int pos)
    average = average / count;
    
    average = average - (average * 0.25);
+   
+   
+   average = maxMove * maxMovePercent;
    
    return average;
   
@@ -904,6 +1034,7 @@ void OnTick()
          
           lastCandle = currentCandle;
         
+        reCalcStopLoss();
          
   }
 //+------------------------------------------------------------------+
