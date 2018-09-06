@@ -56,20 +56,22 @@ input int noOfTradePeriods = 8;
 
 input int shortPeriod = 14;
 input int longPeriod = 28;
-input double maxMovePercent = 0.75;
+
 input double averageSize = 300;
 input bool allowMovingStop = true;
 input bool allowSoftwareTrail = true;
-
+input double percentFromCapital = 0.01;
 input double minLossValue = 3.0;
-
+input double maxPercent = 0.001;
+input double minPercent = 0.1;
+input int startHour = -1;
+input int endHour = -1;
 
 input int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
-input double percentFromCapital = 0.01;
-input double maxPercent = 0.001;
-input double minPercent = 0.1;
+
+
 input bool tradeUp = true;
 input bool tradeDown = true;
 input double customStartBalance = 0;
@@ -112,6 +114,14 @@ void reCalcStopLoss()
    int count = getOpenedOrderNo();
    if(count == 1 && allowMovingStop)
    {
+      if(OrderSelect(lastTicket,SELECT_BY_TICKET) == true)
+      {
+      
+         if(lastStopLoss == 0)
+         {
+            lastStopLoss = OrderStopLoss();
+         }
+      
        double vbid    = MarketInfo(_Symbol,MODE_BID);
       double vask    = MarketInfo(_Symbol,MODE_ASK);
       double close = 0;
@@ -204,21 +214,40 @@ void reCalcStopLoss()
          }
          
       }
-  
+    }
+   }
+   else
+   {
+      lastStopLoss = 0;
    }
 }
 
 
 bool calcTime()
 {
-    //datetime currentDate = TimeCurrent();
+   if(startHour == -1 || endHour == -1)
+   {
+      return true;
+   }
+    datetime currentDate = TimeCurrent();
         
-    //      MqlDateTime strucTime;
-    //      TimeToStruct(currentDate,strucTime);
+          MqlDateTime strucTime;
+          TimeToStruct(currentDate,strucTime);
+          //Print("time now ",strucTime.hour);
+          for (int i=startHour;i != (endHour+1);i=((i+1)%24))
+          {
+            //Print("i is : ",i,"structTime.hour is ",strucTime.hour);
+            if(strucTime.hour == i)
+            {
+               
+               return true;
+            }
+          }
           
-    //      return (strucTime.hour >= startHour && strucTime.hour <= endHour);
+          //bool ret =  (strucTime.hour >= startHour && strucTime.hour <= endHour);
     
-    return true;
+    //return ret;
+    return false;
 }
 
 double calculateVolume(double stopLoss,double balance,double close,double &newMove)
@@ -405,7 +434,7 @@ bool openTrade (int type)
          {
             lastTicket = ticket;
             lastDir = type;
-            lastStopLoss = stopLoss;
+            
             lastAverageMove = averageMove;
             return true;
          }
@@ -688,9 +717,17 @@ bool reachMaximum()
 
 double shohdiSignalDetect (int pos)
 {
+     
       if(reachMaximum())
       {
+         
          return 0.0;
+      }
+      
+      if(!calcTime())
+      {
+         
+         return 0;
       }
      
       int myPos = pos ;
@@ -699,21 +736,21 @@ double shohdiSignalDetect (int pos)
       double lastLongSma = shohdiSma(myPos,longPeriod,0);
       double beforeShortSma = shohdiSma(beforePos,shortPeriod,0);
       double beforeLongSma = shohdiSma(beforePos,longPeriod,0); 
-      MqlCandle lastCandle = getCandle(pos);
-      MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods * shortPeriod  ));
-      int candleDir = 0;
-      if(historyCandle.Close1 > lastCandle.Close1)
-      {
-         candleDir = -1;
-      }
-      else if (historyCandle.Close1 < lastCandle.Close1)
-      {
-         candleDir = 1;
-      }
-      else
-      {
-         candleDir = 0;
-      }
+      //MqlCandle lastCandle = getCandle(pos);
+      //MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods * shortPeriod  ));
+      //int candleDir = 0;
+      //if(historyCandle.Close1 > lastCandle.Close1)
+      //{
+      //   candleDir = -1;
+      //}
+      //else if (historyCandle.Close1 < lastCandle.Close1)
+      //{
+      //   candleDir = 1;
+      //}
+      //else
+      //{
+      //   candleDir = 0;
+      //}
       
       
       if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma && tradeDown )//&& candleDir == -1)
@@ -901,8 +938,8 @@ double calculateMoveOfStopLoss(int pos)
    
    average = average - (average * 0.25);
    
-   
-   average = maxMove * maxMovePercent;
+   average = average * riskToProfit;
+   //average = maxMove * maxMovePercent;
    
    return average;
   
