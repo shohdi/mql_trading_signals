@@ -60,10 +60,10 @@ input int longPeriod = 28;
 input double averageSize = 300;
 input bool allowMovingStop = true;
 input bool allowSoftwareTrail = true;
-input double percentFromCapital = 0.01;
+input double percentFromCapital = 0.03;
 input double minLossValue = 3.0;
-input double maxPercent = 0.001;
-input double minPercent = 0.1;
+input double maxPercent = 0;
+input double minPercent = 0;
 input int startHour = -1;
 input int endHour = -1;
 
@@ -250,6 +250,8 @@ bool calcTime()
     return false;
 }
 
+double maxMinMoney = 0;
+
 double calculateVolume(double stopLoss,double balance,double close,double &newMove)
 {
    double diff = 0;
@@ -280,6 +282,15 @@ double calculateVolume(double stopLoss,double balance,double close,double &newMo
       double allDiff =  volumeCount * diff ;
       
       double lossPrice = allDiff * rate;
+      
+      if(volumeFound == 0.01)
+      {
+         if(lossPrice > maxMinMoney)
+         {
+            maxMinMoney = lossPrice;
+         }
+      }
+      
       if(lossPrice > moneyToLoss)
       {
          foundVolume = true;
@@ -392,6 +403,7 @@ bool openTrade (int type)
     }
     double newAverageMove = 0;
     double volume = calculateVolume(stopLoss,balance,close,newAverageMove);
+    /*
     if( newAverageMove < averageMove)
     {
          averageMove = newAverageMove;
@@ -406,6 +418,7 @@ bool openTrade (int type)
             takeProfit = close - (averageMove * riskToProfit);
           }
     }
+    */
     
    
    //MqlTradeRequest request={0};
@@ -1006,6 +1019,8 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+      Print("Min value to loss every trade : ",maxMinMoney);
+      calcSuccessToFailOrders();
        Print("no of success : " + noOfSuccess + " , no of fail : " + noOfFail);
         double totalVal = noOfSuccess + noOfFail;
         if(totalVal > 0)
@@ -1018,6 +1033,33 @@ void OnDeinit(const int reason)
    EventKillTimer();
       
   }
+  
+  void calcSuccessToFailOrders()
+  {
+      int hstTotal = OrdersHistoryTotal();
+      for(int i=0; i < hstTotal; i++)           
+       {
+            if(OrderSelect(i,SELECT_BY_POS,MODE_HISTORY))
+            {
+               if(OrderMagicNumber() == EXPERT_MAGIC)
+               {
+                  if( OrderProfit() > 0)
+                   {
+                     noOfSuccess++;
+                   }
+                   else if (OrderProfit() < 0)
+                   {
+                     noOfFail++;
+                   }
+               }
+                
+             }
+             
+        }
+                  
+            
+  }
+ 
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
