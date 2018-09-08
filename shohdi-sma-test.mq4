@@ -62,6 +62,7 @@ input bool allowMovingStop = true;
 input bool allowSoftwareTrail = true;
 input double percentFromCapital = 0.03;
 input double minLossValue = 3.0;
+input bool isTakeProfit = true;
 input double maxPercent = 0;
 input double minPercent = 0;
 input int startHour = -1;
@@ -436,6 +437,11 @@ bool openTrade (int type)
                              // MagicNumber of the order
 //--- send the request
    //return OrderSend(request,result);
+   
+   if(!isTakeProfit)
+   {
+      takeProfit = 0;
+   }
    
    int ticket=OrderSend(Symbol(),setType,volume,close,5,stopLoss,takeProfit,title,EXPERT_MAGIC,0,arrowColor);
    
