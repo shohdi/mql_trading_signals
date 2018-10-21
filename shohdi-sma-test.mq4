@@ -63,6 +63,7 @@ input bool allowSoftwareTrail = true;
 input double percentFromCapital = 0.03;
 input double minLossValue = 3.0;
 input bool isTakeProfit = true;
+input bool gradStop = false;
 input double maxPercent = 0;
 input double minPercent = 0;
 input int startHour = -1;
@@ -129,14 +130,17 @@ void reCalcStopLoss()
       double newStopLoss;
       bool changeFound = false;
       color arrowColor;
+      double newAverageMove = lastAverageMove;
+      double orderOpenPrice = OrderOpenPrice();
       
+      //newAverageMove = calcGradAverageMove(lastDir ,vask, vbid,orderOpenPrice,lastAverageMove);
       int setType = 0;
       if (lastDir == 1)
       {
          setType = OP_BUY;
          close = vask;
          arrowColor = clrGreen;
-         newStopLoss = close - lastAverageMove;
+         newStopLoss = close - newAverageMove;
          if(newStopLoss > lastStopLoss)
          {
             //found change
@@ -148,7 +152,7 @@ void reCalcStopLoss()
          setType = OP_SELL;
          close = vbid;
          arrowColor = clrRed;
-         newStopLoss = close + lastAverageMove;
+         newStopLoss = close + newAverageMove;
           if(newStopLoss < lastStopLoss)
          {
             //found change
@@ -221,6 +225,92 @@ void reCalcStopLoss()
    {
       lastStopLoss = 0;
    }
+}
+
+
+double calcGradAverageMove(int lastDir , double vask,double vbid,double orderOpenPrice,double lastAverageMove)
+{
+   double ret = 0;
+   if(!gradStop)
+   {
+      return lastAverageMove;
+   }
+   double newClose = 0;
+   
+   double takeProfit = 0;
+   double slDiff = 0;
+   double tpDiff = 0;
+  if (lastDir == 1)
+      {
+         
+         newClose = vask;
+         if(newClose <= orderOpenPrice)
+         {
+            return lastAverageMove;
+         }
+         
+         double retPercent = newClose - ((newClose - orderOpenPrice) * 0.1);
+         retPercent = newClose - retPercent;
+         
+         
+         //start calc new average
+         takeProfit = orderOpenPrice + (lastAverageMove * riskToProfit);
+         if(newClose >= takeProfit)
+         {
+            return retPercent;
+         }
+          tpDiff = takeProfit - newClose;
+          slDiff = (tpDiff / riskToProfit);
+         
+         if(slDiff < retPercent)
+         {
+            return retPercent;
+         }
+         else
+         {
+            return slDiff;
+         }
+         
+         
+         
+      }
+      else if(lastDir == -1)
+      {
+         newClose = vbid;
+         if(newClose >= orderOpenPrice)
+         {
+            return lastAverageMove;
+         }
+         
+         double retPercentDown = newClose + (( orderOpenPrice - newClose) * 0.1);
+         retPercentDown = retPercentDown - newClose;
+         
+         
+         //start calc new average
+         takeProfit = orderOpenPrice - (lastAverageMove * riskToProfit);
+         if(newClose <= takeProfit)
+         {
+            return retPercentDown;
+         }
+          tpDiff = newClose - takeProfit;
+          slDiff = (tpDiff / riskToProfit);
+         
+         if(slDiff < retPercentDown)
+         {
+            return retPercentDown;
+         }
+         else
+         {
+            return slDiff;
+         }
+         
+      }
+      else
+      {
+         return lastAverageMove;
+      }
+   
+   
 }
 
 
@@ -739,15 +829,15 @@ double shohdiSignalDetect (int pos)
      
       if(reachMaximum())
       {
-         
+         Print("Reach max!!");
          return 0.0;
       }
       
-      if(!calcTime())
-      {
+      //if(!calcTime())
+      //{
          
-         return 0;
-      }
+      //   return 0;
+      //}
      
       int myPos = pos ;
       int beforePos = myPos + 1;
