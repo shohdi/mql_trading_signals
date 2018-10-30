@@ -58,12 +58,11 @@ input int shortPeriod = 14;
 input int longPeriod = 28;
 
 input double averageSize = 300;
-input bool allowMovingStop = true;
-input bool allowSoftwareTrail = true;
-input double percentFromCapital = 0.03;
-input double minLossValue = 3.0;
+input bool allowMovingStop = false;
+input bool allowSoftwareTrail = false;
+input double percentFromCapital = 0.05;
+input double minLossValue = 5;
 input bool isTakeProfit = true;
-input bool gradStop = false;
 input double maxPercent = 0;
 input double minPercent = 0;
 input int startHour = -1;
@@ -130,17 +129,14 @@ void reCalcStopLoss()
       double newStopLoss;
       bool changeFound = false;
       color arrowColor;
-      double newAverageMove = lastAverageMove;
-      double orderOpenPrice = OrderOpenPrice();
       
-      //newAverageMove = calcGradAverageMove(lastDir ,vask, vbid,orderOpenPrice,lastAverageMove);
       int setType = 0;
       if (lastDir == 1)
       {
          setType = OP_BUY;
          close = vask;
          arrowColor = clrGreen;
-         newStopLoss = close - newAverageMove;
+         newStopLoss = close - lastAverageMove;
          if(newStopLoss > lastStopLoss)
          {
             //found change
@@ -152,7 +148,7 @@ void reCalcStopLoss()
          setType = OP_SELL;
          close = vbid;
          arrowColor = clrRed;
-         newStopLoss = close + newAverageMove;
+         newStopLoss = close + lastAverageMove;
           if(newStopLoss < lastStopLoss)
          {
             //found change
@@ -225,92 +221,6 @@ void reCalcStopLoss()
    {
       lastStopLoss = 0;
    }
-}
-
-
-double calcGradAverageMove(int lastDir , double vask,double vbid,double orderOpenPrice,double lastAverageMove)
-{
-   double ret = 0;
-   if(!gradStop)
-   {
-      return lastAverageMove;
-   }
-   double newClose = 0;
-   
-   double takeProfit = 0;
-   double slDiff = 0;
-   double tpDiff = 0;
-  if (lastDir == 1)
-      {
-         
-         newClose = vask;
-         if(newClose <= orderOpenPrice)
-         {
-            return lastAverageMove;
-         }
-         
-         double retPercent = newClose - ((newClose - orderOpenPrice) * 0.1);
-         retPercent = newClose - retPercent;
-         
-         
-         //start calc new average
-         takeProfit = orderOpenPrice + (lastAverageMove * riskToProfit);
-         if(newClose >= takeProfit)
-         {
-            return retPercent;
-         }
-          tpDiff = takeProfit - newClose;
-          slDiff = (tpDiff / riskToProfit);
-         
-         if(slDiff < retPercent)
-         {
-            return retPercent;
-         }
-         else
-         {
-            return slDiff;
-         }
-         
-         
-         
-      }
-      else if(lastDir == -1)
-      {
-         newClose = vbid;
-         if(newClose >= orderOpenPrice)
-         {
-            return lastAverageMove;
-         }
-         
-         double retPercentDown = newClose + (( orderOpenPrice - newClose) * 0.1);
-         retPercentDown = retPercentDown - newClose;
-         
-         
-         //start calc new average
-         takeProfit = orderOpenPrice - (lastAverageMove * riskToProfit);
-         if(newClose <= takeProfit)
-         {
-            return retPercentDown;
-         }
-          tpDiff = newClose - takeProfit;
-          slDiff = (tpDiff / riskToProfit);
-         
-         if(slDiff < retPercentDown)
-         {
-            return retPercentDown;
-         }
-         else
-         {
-            return slDiff;
-         }
-         
-      }
-      else
-      {
-         return lastAverageMove;
-      }
-   
-   
 }
 
 
@@ -829,15 +739,15 @@ double shohdiSignalDetect (int pos)
      
       if(reachMaximum())
       {
-         Print("Reach max!!");
+         
          return 0.0;
       }
       
-      //if(!calcTime())
-      //{
+      if(!calcTime())
+      {
          
-      //   return 0;
-      //}
+         return 0;
+      }
      
       int myPos = pos ;
       int beforePos = myPos + 1;
@@ -845,29 +755,48 @@ double shohdiSignalDetect (int pos)
       double lastLongSma = shohdiSma(myPos,longPeriod,0);
       double beforeShortSma = shohdiSma(beforePos,shortPeriod,0);
       double beforeLongSma = shohdiSma(beforePos,longPeriod,0); 
-      //MqlCandle lastCandle = getCandle(pos);
-      //MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods * shortPeriod  ));
-      //int candleDir = 0;
-      //if(historyCandle.Close1 > lastCandle.Close1)
+      MqlCandle lastCandle = getCandle(pos);
+      MqlCandle historyCandle = getCandle(pos + (noOfTradePeriods * shortPeriod  ));
+      int candleDir = 0;
+      if(historyCandle.Close1 > lastCandle.Close1)
+      {
+         candleDir = -1;
+      }
+      else if (historyCandle.Close1 < lastCandle.Close1)
+      {
+         candleDir = 1;
+      }
+      else
+      {
+         candleDir = 0;
+      }
+      
+      
+      //MqlCandle candleOld1 = getCandle(longPeriod);
+      //MqlCandle candleOld2 = getCandle(longPeriod+1);
+      //MqlCandle candleNew1 = getCandle(1);
+      //MqlCandle candleNew2 = getCandle(2);
+      
+      //int quantumDir = 0;
+      //double diff1 = candleNew1.Close1 - candleOld1.Close1;
+      //double diff2 = candleNew2.Close1 - candleOld2.Close1;
+      //if(diff1 < 0 && diff1 < diff2)
       //{
-      //   candleDir = -1;
+      //   quantumDir = -1;
       //}
-      //else if (historyCandle.Close1 < lastCandle.Close1)
+      
+      //if(diff1 > 0 && diff1 > diff2)
       //{
-      //   candleDir = 1;
-      //}
-      //else
-      //{
-      //   candleDir = 0;
+      //   quantumDir = 1;
       //}
       
       
-      if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma && tradeDown )//&& candleDir == -1)
+      if(lastShortSma < lastLongSma  && beforeShortSma > beforeLongSma &&  candleDir == -1 && tradeDown )
       {
          return -1;
          
       }
-      else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma && tradeUp )//&& candleDir == 1)
+      else if  (lastShortSma > lastLongSma  && beforeShortSma < beforeLongSma && candleDir == 1 && tradeUp  )
       {
          return 1;
       }
@@ -1228,4 +1157,3 @@ void OnTimer()
 
   
 //+------------------------------------------------------------------+
-
