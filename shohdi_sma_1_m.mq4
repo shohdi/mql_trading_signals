@@ -112,9 +112,9 @@ int noOfTradePeriods = 8;
 
 
 
-input int shortPeriod = 14;
+input int shortPeriod = 22;
 
-input int longPeriod = 28;
+input int longPeriod = 42;
 
 
 
@@ -124,7 +124,7 @@ double averageSize = 300;
 
 bool allowSoftwareTrail = false;
 
-input double percentFromCapital = 0.01;
+input double percentFromCapital = 0.05;
 
 input double minLossValue = 5;
 
@@ -132,7 +132,7 @@ input bool isTakeProfit = true;
 
 bool gradStop = false;
 
-double maxPercent = 0;
+double maxPercent = 0.0001;
 
 double minPercent = 0;
 
