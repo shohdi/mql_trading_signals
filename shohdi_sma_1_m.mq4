@@ -635,6 +635,10 @@ double shohdiSignalDetect (int pos)
       double beforeLastLongSma = shohdiSma(myOldPos,longPeriod,0);
       double zeroShort = shohdiSma(0,shortPeriod,0);
       double zeroLong = shohdiSma(0,longPeriod,0);
+      
+      MqlCandle newCandle =  getCandle(myPos);
+      MqlCandle oldCandle = getCandle(myPos+ longPeriod);
+      
       /*
       int mySmaSize = ArraySize(shortSmas);
      
@@ -726,12 +730,26 @@ double shohdiSignalDetect (int pos)
       {
          if(lastShortSma < lastLongSma  && beforeLastShortSma > beforeLastLongSma  && tradeDown )
          {
-            return -1;
+            if(newCandle.Close1 < oldCandle.Close1 && newCandle.High1 < oldCandle.High1 && newCandle.Low1 < oldCandle.Low1)
+            {
+               return -1;
+            }
+            else
+            {
+               return 0;
+            }
             
          }
          else if  (lastShortSma > lastLongSma  && beforeLastShortSma < beforeLastLongSma && tradeUp  )
          {
-            return 1;
+            if(newCandle.Close1 > oldCandle.Close1 && newCandle.High1 > oldCandle.High1 && newCandle.Low1 > oldCandle.Low1)
+            {
+               return 1;
+            }
+            else
+            {
+               return 0;
+            }
          }
          else
          {
