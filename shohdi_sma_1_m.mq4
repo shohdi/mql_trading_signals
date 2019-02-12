@@ -52,33 +52,33 @@ MqlCandle lastCandle1m;
 //+------------------------------------------------------------------+
 
 
-input int noOfTradePeriods = 8;
+int noOfTradePeriods = 8;
 
 
 input int shortPeriod = 14;
 input int longPeriod = 28;
 
-input double averageSize = 300;
-input bool allowMovingStop = false;
-input bool allowSoftwareTrail = false;
+double averageSize = 300;
+ bool allowMovingStop = false;
+bool allowSoftwareTrail = false;
 input double percentFromCapital = 0.01;
-double minLossValue = 10.0;
+input double minLossValue = 5;
 input bool isTakeProfit = true;
-input bool gradStop = false;
-input double maxPercent = 0;
-input double minPercent = 0;
-input int startHour = -1;
-input int endHour = -1;
+bool gradStop = false;
+double maxPercent = 0;
+double minPercent = 0;
+int startHour = -1;
+int endHour = -1;
 
-input int periodsToCheck = 5;
+int periodsToCheck = 5;
 input double riskToProfit = 2.2;
 
 
 
 
-input bool tradeUp = true;
-input bool tradeDown = true;
-input double customStartBalance = 0;
+ bool tradeUp = true;
+ bool tradeDown = true;
+ double customStartBalance = 0;
 
 
 
@@ -633,6 +633,8 @@ double shohdiSignalDetect (int pos)
       double lastLongSma = shohdiSma(myPos,longPeriod,0);
       double beforeLastShortSma = shohdiSma(myOldPos,shortPeriod,0);
       double beforeLastLongSma = shohdiSma(myOldPos,longPeriod,0);
+      double zeroShort = shohdiSma(0,shortPeriod,0);
+      double zeroLong = shohdiSma(0,longPeriod,0);
       /*
       int mySmaSize = ArraySize(shortSmas);
      
@@ -738,8 +740,10 @@ double shohdiSignalDetect (int pos)
       }
       else
       {
+         
          if(lastDir == 1)
          {
+            
             if(lastShortSma < lastLongSma)
             {
                //signal to close
@@ -756,6 +760,27 @@ double shohdiSignalDetect (int pos)
                double closeRes1 = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),5,clrNONE);
             }
          }
+         /*
+         if(lastDir == 1)
+         {
+            
+            if(zeroShort < zeroLong)
+            {
+               //signal to close
+               Print("close due to down move " ,  OrderProfit());
+               double closeRes = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),5,clrNONE);
+            }
+         }
+         else if(lastDir == -1)
+         {
+            if(zeroShort > zeroLong)
+            {
+               //signal to close
+               Print("close due to up move " ,  OrderProfit());
+               double closeRes1 = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),5,clrNONE);
+            }
+         }
+         */
       }
       
       
