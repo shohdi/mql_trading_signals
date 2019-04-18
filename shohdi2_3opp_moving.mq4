@@ -1284,8 +1284,12 @@ double shohdiSignalDetect (int pos)
          return 0;
       }
       
-      double sma1 =shohdiSma(1,PERIOD_M1,longPeriod,0);
-      double sma2 = shohdiSma(2,PERIOD_M1,longPeriod,0);
+      double sma1 =shohdiSma(0,PERIOD_M15,longPeriod,0);
+      double sma2 = shohdiSma(1,PERIOD_M15,longPeriod,0);
+      double sma3 = shohdiSma(2,PERIOD_M15,longPeriod,0);
+      double sma4 = shohdiSma(longPeriod/2,PERIOD_M15,longPeriod,0);
+      double sma5 = shohdiSma(longPeriod,PERIOD_M15,longPeriod,0);
+
 
       
       MqlCandle current = getCandle(1,PERIOD_M1);
@@ -1298,11 +1302,17 @@ double shohdiSignalDetect (int pos)
       //&& current.Low1 > back.Low1
       //&& back.Low1 > beforeBack.Low1
       //&&
-       current.Close1 > back.Close1
+      // current.Close1 > back.Close1
+      //&& 
+      //back.Close1 > beforeBack.Close1
+      //&& 
+      sma1 < sma2
       && 
-      back.Close1 > beforeBack.Close1
-      && 
-      sma1 < sma2)
+      sma2 < sma3
+      &&
+      sma3 < sma4
+      &&
+      sma4 < sma5)
       {
          return -1;
       }
@@ -1313,11 +1323,17 @@ double shohdiSignalDetect (int pos)
       //&& current.Low1 < back.Low1
       //&& back.Low1 < beforeBack.Low1
       //&& 
-      current.Close1 < back.Close1
+      //current.Close1 < back.Close1
+      //&& 
+      //back.Close1 < beforeBack.Close1
+      //&&
+       sma1 > sma2
       && 
-      back.Close1 < beforeBack.Close1
+      sma2 > sma3
       &&
-       sma1 > sma2)
+      sma3 > sma4
+      &&
+      sma4 > sma5)
       {
          return 1;
       }
