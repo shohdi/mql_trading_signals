@@ -109,7 +109,7 @@ MqlCandle lastCandle1m;
 int noOfTradePeriods = 8;
 
 
-
+input int averageMoveMultiply = 1.0;
 
 
 input int shortPeriod = 50;
@@ -232,8 +232,8 @@ double lastAverageMove = 0;
 
 
 
-
-
+double foundSignalPrice = 0.0;
+int foundSignalDir = 0.0;
 
 
 
@@ -1284,59 +1284,83 @@ double shohdiSignalDetect (int pos)
          return 0;
       }
       
-      double sma1 =shohdiSma(0,PERIOD_M1,longPeriod,0);
-      double sma2 = shohdiSma(1,PERIOD_M1,longPeriod,0);
-      double sma3 = shohdiSma(2,PERIOD_M1,longPeriod,0);
-      double sma4 = shohdiSma(longPeriod/2,PERIOD_M1,longPeriod,0);
-      double sma5 = shohdiSma(longPeriod,PERIOD_M1,longPeriod,0);
-
-
-      
-      MqlCandle current = getCandle(1,PERIOD_M1);
-      MqlCandle back = getCandle(2,PERIOD_M1);
-      MqlCandle beforeBack = getCandle(3,PERIOD_M1);
-      
-      if(
-      //current.High1 > back.High1 
-      //&& back.High1 > beforeBack.High1
-      //&& current.Low1 > back.Low1
-      //&& back.Low1 > beforeBack.Low1
-      //&&
-      // current.Close1 > back.Close1
-      //&& 
-      //back.Close1 > beforeBack.Close1
-      //&& 
-      sma1 < sma2
-      && 
-      sma2 < sma3
-      &&
-      sma3 < sma4
-      &&
-      sma4 < sma5)
+      double vbid = MarketInfo(_Symbol,MODE_BID);
+      double takeProfitMove = calculateMoveOfStopLoss(1);
+      if(foundSignalPrice == 0.0)
       {
-         return -1;
+              double sma1 =shohdiSma(0,PERIOD_M1,longPeriod,0);
+         double sma2 = shohdiSma(1,PERIOD_M1,longPeriod,0);
+         double sma3 = shohdiSma(2,PERIOD_M1,longPeriod,0);
+         double sma4 = shohdiSma(longPeriod/2,PERIOD_M1,longPeriod,0);
+         double sma5 = shohdiSma(longPeriod,PERIOD_M1,longPeriod,0);
+   
+   
+         
+         MqlCandle current = getCandle(1,PERIOD_M1);
+         MqlCandle back = getCandle(2,PERIOD_M1);
+         MqlCandle beforeBack = getCandle(3,PERIOD_M1);
+         
+         if(
+         //current.High1 > back.High1 
+         //&& back.High1 > beforeBack.High1
+         //&& current.Low1 > back.Low1
+         //&& back.Low1 > beforeBack.Low1
+         //&&
+         // current.Close1 > back.Close1
+         //&& 
+         //back.Close1 > beforeBack.Close1
+         //&& 
+         sma1 < sma2
+         && 
+         sma2 < sma3
+         &&
+         sma3 < sma4
+         &&
+         sma4 < sma5)
+         {
+            foundSignalPrice = vbid;
+            foundSignalDir = -1;
+         }
+         
+         if(
+         //current.High1 < back.High1 
+         //&& back.High1 < beforeBack.High1
+         //&& current.Low1 < back.Low1
+         //&& back.Low1 < beforeBack.Low1
+         //&& 
+         //current.Close1 < back.Close1
+         //&& 
+         //back.Close1 < beforeBack.Close1
+         //&&
+          sma1 > sma2
+         && 
+         sma2 > sma3
+         &&
+         sma3 > sma4
+         &&
+         sma4 > sma5)
+         {
+            foundSignalPrice = vbid;
+            foundSignalDir = 1;
+         }
       }
-      
-      if(
-      //current.High1 < back.High1 
-      //&& back.High1 < beforeBack.High1
-      //&& current.Low1 < back.Low1
-      //&& back.Low1 < beforeBack.Low1
-      //&& 
-      //current.Close1 < back.Close1
-      //&& 
-      //back.Close1 < beforeBack.Close1
-      //&&
-       sma1 > sma2
-      && 
-      sma2 > sma3
-      &&
-      sma3 > sma4
-      &&
-      sma4 > sma5)
+      else
       {
-         return 1;
+         if(foundSignalDir == 1 && ((foundSignalPrice - vbid) > (takeProfitMove * averageMoveMultiply )))
+         {
+            foundSignalPrice = 0.0;
+            foundSignalDir = 0.0;
+            return 1;
+         }
+         else if(foundSignalDir == -1 && ((vbid - foundSignalPrice) > (takeProfitMove * averageMoveMultiply )))
+         {
+            foundSignalPrice = 0.0;
+            foundSignalDir = 0.0;
+            return -1;
+         } 
+      
       }
+ 
       
       
       return 0;
