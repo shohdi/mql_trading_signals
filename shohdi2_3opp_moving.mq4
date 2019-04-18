@@ -1284,11 +1284,11 @@ double shohdiSignalDetect (int pos)
          return 0;
       }
       
-      double sma1 =shohdiSma(0,PERIOD_M15,longPeriod,0);
-      double sma2 = shohdiSma(1,PERIOD_M15,longPeriod,0);
-      double sma3 = shohdiSma(2,PERIOD_M15,longPeriod,0);
-      double sma4 = shohdiSma(longPeriod/2,PERIOD_M15,longPeriod,0);
-      double sma5 = shohdiSma(longPeriod,PERIOD_M15,longPeriod,0);
+      double sma1 =shohdiSma(0,PERIOD_M1,longPeriod,0);
+      double sma2 = shohdiSma(1,PERIOD_M1,longPeriod,0);
+      double sma3 = shohdiSma(2,PERIOD_M1,longPeriod,0);
+      double sma4 = shohdiSma(longPeriod/2,PERIOD_M1,longPeriod,0);
+      double sma5 = shohdiSma(longPeriod,PERIOD_M1,longPeriod,0);
 
 
       
