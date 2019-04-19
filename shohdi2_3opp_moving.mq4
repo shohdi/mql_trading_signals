@@ -112,9 +112,13 @@ int noOfTradePeriods = 8;
 input int averageMoveMultiply = 1.0;
 
 
-input int shortPeriod = 50;
+int shortPeriod = 50;
 
 input int longPeriod = 80;
+
+input int InPeriod = PERIOD_M1;
+
+input int MultiplySpread = 2;
 
 
 
@@ -1288,11 +1292,11 @@ double shohdiSignalDetect (int pos)
       double takeProfitMove = calculateMoveOfStopLoss(1);
       if(foundSignalPrice == 0.0)
       {
-              double sma1 =shohdiSma(0,PERIOD_M1,longPeriod,0);
-         double sma2 = shohdiSma(1,PERIOD_M1,longPeriod,0);
-         double sma3 = shohdiSma(2,PERIOD_M1,longPeriod,0);
-         double sma4 = shohdiSma(longPeriod/2,PERIOD_M1,longPeriod,0);
-         double sma5 = shohdiSma(longPeriod,PERIOD_M1,longPeriod,0);
+              double sma1 =shohdiSma(0,InPeriod,longPeriod,0);
+         double sma2 = shohdiSma(1,InPeriod,longPeriod,0);
+         double sma3 = shohdiSma(2,InPeriod,longPeriod,0);
+         double sma4 = shohdiSma(longPeriod/2,InPeriod,longPeriod,0);
+         double sma5 = shohdiSma(longPeriod,InPeriod,longPeriod,0);
    
    
          
@@ -1992,7 +1996,7 @@ double calculateMoveOfStopLoss(int pos)
 
    double valSpread = getSpread();
     double pointSize = MarketInfo(_Symbol,MODE_POINT) ;
-  double averageMove = valSpread * 2;
+  double averageMove = valSpread * MultiplySpread;
    //double averageMove = pointSize * 5;
    return averageMove;
    
