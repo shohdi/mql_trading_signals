@@ -109,16 +109,16 @@ MqlCandle lastCandle1m;
 int noOfTradePeriods = 8;
 
 
-input int averageMoveMultiply = 1.0;
+input int averageMoveMultiply = 3.0;
 
 
 int shortPeriod = 50;
 
-input int longPeriod = 80;
+input int longPeriod = 76;
 
 input int InPeriod = PERIOD_M1;
 
-input int MultiplySpread = 2;
+input int MultiplySpread = 7;
 
 
 
@@ -130,7 +130,7 @@ bool allowSoftwareTrail = false;
 
 input double percentFromCapital = 0.01;
 
-input double riskToProfit = 1.0/10.0;//1.0/5.0;
+input double riskToProfit = 1.1;//1.0/10.0;//1.0/5.0;
 
 double minLossValue = (1/riskToProfit) * 1 ;
 
